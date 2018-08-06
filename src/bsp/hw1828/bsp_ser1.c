@@ -70,7 +70,7 @@ void    bsp_ser1_dma_init( void )
         hdma_rx.Init.MemInc              = DMA_MINC_ENABLE;
         hdma_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
         hdma_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
-        hdma_rx.Init.Mode                = DMA_CIRCULAR;
+        hdma_rx.Init.Mode                = DMA_NORMAL;
         hdma_rx.Init.Priority            = DMA_PRIORITY_MEDIUM;
 
         HAL_DMA_Init( &hdma_rx );
@@ -106,12 +106,11 @@ void    bsp_ser1_init(                  const   size_t          baud )
         bsp_ser1_dma_init();
 
 
-
         NVIC_SetPriority(       DMA1_Channel4_IRQn, BSP_NVIC_PRIO_SER1_DMA_TX   );
         NVIC_EnableIRQ(         DMA1_Channel4_IRQn                              );
 
-        NVIC_SetPriority(       DMA1_Channel5_IRQn, BSP_NVIC_PRIO_SER1_DMA_RX   );
-        NVIC_EnableIRQ(         DMA1_Channel5_IRQn                              );
+        //NVIC_SetPriority(       DMA1_Channel5_IRQn, BSP_NVIC_PRIO_SER1_DMA_RX   );
+        //NVIC_EnableIRQ(         DMA1_Channel5_IRQn                              );
 
         NVIC_SetPriority(       USART1_IRQn,        BSP_NVIC_PRIO_SER1_UART     );
         NVIC_EnableIRQ(         USART1_IRQn                                     );
@@ -139,6 +138,8 @@ bool bsp_ser1_xmit(                             uint8_t *               data,
 
         bsp_ser1_xfer_dir_set( true );
 
+        //__HAL_UART_ENABLE_IT( &huart, UART_IT_TC );
+
         resp    =   HAL_UART_Transmit_DMA( &huart, data, size );
 
         if( resp == HAL_OK )
@@ -146,7 +147,7 @@ bool bsp_ser1_xmit(                             uint8_t *               data,
                 while( HAL_UART_GetState( &huart ) != HAL_UART_STATE_READY );
         }
 
-        bsp_ser1_xfer_dir_set( false );
+        //bsp_ser1_xfer_dir_set( false );
 
 
         return( false );
@@ -157,17 +158,29 @@ bool bsp_ser1_xmit(                             uint8_t *               data,
 /* Receive related                                                            */
 /******************************************************************************/
 
-void    bsp_ser1_recv(                          uint8_t *           data,
+void bsp_ser1_recv_start(                       uint8_t *           data,
                                                 size_t              size )
 {
+        bsp_ser1_xfer_dir_set( false );
+
+        __HAL_UART_ENABLE_IT( &huart, UART_IT_IDLE );
+        //HAL_UART_DMAStop( &huart );
+        HAL_UART_Receive_DMA( &huart, data, size );
+
+}
+
+
+void bsp_ser1_recv_stop( void )
+{
+       //__HAL_UART_DISABLE_IT( &huart, UART_IT_IDLE );
+        //HAL_UART_DMAStop( &huart );
+        HAL_UART_AbortReceive( &huart );
 }
 
 
 uint32_t bsp_ser1_dma_recv_get_ndtr( void )
 {
-        //return( DMA1_Stream1->NDTR );
-        //return( DMA2_Stream2->NDTR );
-        return( 0 );
+        return( huart.hdmarx->Instance->CNDTR );
 }
 
 
@@ -175,19 +188,40 @@ uint32_t bsp_ser1_dma_recv_get_ndtr( void )
 /* Interrupt Service Routines                                                 */
 /******************************************************************************/
 
-void bsp_ser1_isr( void )
+bsp_ser_isr_sts_t
+bsp_ser1_isr( void )
 {
-	HAL_UART_IRQHandler( &huart );
+        volatile    bsp_ser_isr_sts_t   isr_sts = BSP_SER_ISR_STS_NONE;
+
+
+        if( __HAL_UART_GET_IT( &huart, UART_IT_IDLE ) )
+        {
+                __HAL_UART_CLEAR_IT( &huart, USART_ICR_IDLECF );
+                isr_sts         |=  BSP_SER_ISR_STS_IDLE;
+        }
+
+        HAL_UART_IRQHandler( &huart );
+
+        return( isr_sts );
 }
 
 
-void bsp_ser1_dma_tx_isr( void )
+void
+bsp_ser1_dma_tx_isr( void )
 {
         HAL_DMA_IRQHandler( huart.hdmatx );
 }
 
 
-void bsp_ser1_dma_rx_isr( void )
+void
+bsp_ser1_dma_rx_isr( void )
 {
         HAL_DMA_IRQHandler( huart.hdmarx );
+}
+
+
+void
+bsp_ser1_xmit_complete( void )
+{
+        bsp_ser1_xfer_dir_set( false );
 }

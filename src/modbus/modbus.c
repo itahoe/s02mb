@@ -7,7 +7,7 @@
 
 #include "modbus.h"
 
-
+/*
 static
 uint16_t modbus_addr_translate(         uint16_t                addr )
 {
@@ -34,70 +34,60 @@ uint16_t modbus_addr_translate(         uint16_t                addr )
 
         return( addr );
 }
+*/
 
 
-void    modbus_rtu_init(                        modbus_rtu_t *  p,
-                                                uint16_t        dev_addr,
-                                                uint8_t *       data_xmit,
-                                                uint8_t *       data_recv )
+void
+modbus_rtu_init(                                modbus_dev_t *  dev,
+                                                //uint8_t *       data_xmit,
+                                                uint8_t *       data_recv,
+                                                size_t          cnt,
+                                                uint16_t *      tbl0,
+                                                uint16_t *      tbl1,
+                                                uint16_t *      tbl2,
+                                                uint16_t *      tbl3 )
 {
-        modbus_rtu_rqst_t *     rqst    = &( p->rqst );
-        modbus_rtu_resp_t *     resp    = &( p->resp );
+        modbus_xfer_t *         recv            = &( dev->raw );
+        //modbus_xfer_t *         xmit            = &( dev->xmit );
 
 
-        p->dev_addr     =   dev_addr;
-        rqst->data      =   data_xmit;
-        rqst->len       =   0;
-        resp->data      =   data_recv;
-        resp->len       =   0;
-        resp->offset    =   0;
+        //xmit->buf       =   data_xmit;
+        //xmit->cnt       =   cnt;
+        recv->buf       =   data_recv;
+        recv->cnt       =   cnt;
+        dev->tbl0       =   tbl0;
+        dev->tbl1       =   tbl1;
+        dev->tbl2       =   tbl2;
+        dev->tbl3       =   tbl3;
 }
 
 
-size_t  modbus_rtu_rqst(                        modbus_rtu_t *  p )
+void
+modbus_reg_update(                              modbus_reg_t *  reg,
+                                                uint16_t        data )
 {
-        uint16_t                crc;
-        size_t                  len     = 0;
-        uint16_t                reg_addr;
-        modbus_rtu_rqst_t *     rqst    = &( p->rqst );
-        uint8_t *               data    = rqst->data;
-
-
-        *(data + 0)     =   (uint8_t) (p->dev_addr);
-        *(data + 1)     =   rqst->func;
-        reg_addr        =   modbus_addr_translate( rqst->reg->addr );
-        *(data + 2)     =   reg_addr >> 8;
-        *(data + 3)     =   reg_addr & 0xFF;
-        *(data + 4)     =   rqst->reg->size >> 8;
-        *(data + 5)     =   rqst->reg->size & 0xFF;
-        crc             =   modbus_crc( data, (len = 6) );
-        *(data + 6)     =   crc >> 8;
-        *(data + 7)     =   crc & 0xFF;
-        len                     =   8;
-
-        return( len );
+        reg->data         =   data;
 }
 
 
-int     modbus_rtu_resp(                        modbus_rtu_t *  p )
+modbus_rslt_t
+modbus_cfg(                                     modbus_dev_t *  dev,
+                                                modbus_cfg_t    cfg,
+                                        const   void *          value )
 {
-        int                     err     = 0;
-        uint16_t                crc;
-        modbus_rtu_resp_t *     resp    = &( p->resp );
-        uint8_t *               raw     = p->resp.data + p->resp.offset;
-        size_t                  len;
+        modbus_rslt_t   rslt    = MODBUS_RSLT_OK;
 
 
-        resp->func      =   (modbus_func_t) *(raw + 1);
-        len             =   *(raw + 2);
-        crc             =   *(raw + 2 + len + 1) << 8;
-        crc             |=  *(raw + 2 + len + 2) & 0xFF;
-
-        if( crc != modbus_crc( raw, 3 + len ) )
+        switch( cfg )
         {
-                err     =  -1;
+                case MODBUS_CFG_DEV_ADDR:
+                        dev->addr               =   *( (uint8_t *) value );
+                        break;
+
+                default:
+                        rslt                    =   MODBUS_RSLT_INVALID_PARAMETER;
+                        break;
         }
 
-        return( err );
+        return( rslt );
 }
-
