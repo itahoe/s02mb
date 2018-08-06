@@ -16,16 +16,10 @@
 modbus_rslt_t
 modbus_rtu_rqst_recv(                           modbus_dev_t *  dev )
 {
-        //modbus_xfer_t *         recv            = &( dev->recv );
-        //modbus_xfer_t *         xmit            = &( dev->xmit );
-        //uint8_t *               raw             = recv->buf;
-        uint8_t *               raw             = dev->raw.buf;
-        uint8_t                 cnt             = dev->raw.cnt;
-        //modbus_func_type_t      func_code       = (modbus_func_type_t) raw[ 1];
+        uint8_t *               raw             = dev->buf.raw;
+        uint8_t                 cnt             = dev->buf.len;
         uint8_t *               dev_addr        = &raw[ 0];
         uint8_t *               func_code       = &raw[ 1];
-        //uint16_t                reg_addr        = (raw[2] << 8) | (raw[3] & 0xFF);
-        //uint16_t                reg_cnt         = (raw[4] << 8) | (raw[5] & 0xFF);
 
 
         if( *dev_addr != dev->addr )
@@ -37,9 +31,6 @@ modbus_rtu_rqst_recv(                           modbus_dev_t *  dev )
         {
                 return( MODBUS_RSLT_INVALID_CRC );
         }
-
-        //xmit->buf[0]    =   dev->addr;
-        //xmit->buf[1]    =   func_code;
 
         switch( (modbus_func_type_t) *func_code )
         {
@@ -77,29 +68,11 @@ modbus_rtu_rqst_recv(                           modbus_dev_t *  dev )
         return( MODBUS_RSLT_OK );
 }
 
-/*
-typedef union
-{
-    float               f;
-    uint8_t             u[ 4 ];
-} conc_t;
-*/
-/*
-
-static
-void    next_data(                              float *         f )
-{
-        if( ++(*f) > 100 )
-        {
-                *f       =   0;
-        }
-}
-*/
 
 modbus_rslt_t
 modbus_rtu_resp_xmit(                           modbus_dev_t *  dev )
 {
-        uint8_t *       raw             = &( dev->raw.buf[0] );
+        uint8_t *       raw             = &( dev->buf.raw[0] );
         size_t          len;
         uint8_t *       byte_count      = &raw[ 2];
         uint16_t        reg_count       = ( raw[ 4] << 8) | (raw[ 5] & 0xFF );

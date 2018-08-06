@@ -86,7 +86,7 @@ static  modbus_dev_t            dev     =
         bool                    sens_rdy                = false;
         bool                    uart_tx_complete        = false;
         //uint8_t                 modbus_buf_xmit[ MODBUS_RTU_FRAME_SIZE_MAX_OCT ];
-        uint8_t                 modbus_raw[ MODBUS_RTU_FRAME_SIZE_MAX_OCT ];
+        uint8_t                 modbus_raw_data_buf[ MODBUS_RTU_FRAME_SIZE_MAX_OCT ];
         uint16_t                modbus_tbl0[ 256 ];
         uint16_t                modbus_tbl1[ 256 ];
         uint16_t                modbus_tbl2[ 256 ];
@@ -192,9 +192,8 @@ int main( void )
         app_sens_run();
 
 
-        modbus_rtu_init(        &dev,
-                                //modbus_buf_xmit,
-                                modbus_raw,
+        modbus_init(            &dev,
+                                modbus_raw_data_buf,
                                 MODBUS_RTU_FRAME_SIZE_MAX_OCT,
                                 modbus_tbl0,
                                 modbus_tbl1,
@@ -206,41 +205,30 @@ int main( void )
 
         while( true )
         {
-                //bsp_ser1_recv( data_recv, sizeof( data_recv ) );
-                //bsp_ser1_recv_start( dev.recv.buf, dev.recv.cnt );
-                bsp_ser1_recv_start( dev.raw.buf, MODBUS_RTU_FRAME_SIZE_MAX_OCT );
+                bsp_ser1_recv_start( dev.buf.raw, MODBUS_RTU_FRAME_SIZE_MAX_OCT );
 
                 while( !sens_rdy );
 
-                //dev.recv.cnt    =   sizeof( dev.recv.buf ) - bsp_ser1_dma_recv_get_ndtr();
-                dev.raw.cnt     =   MODBUS_RTU_FRAME_SIZE_MAX_OCT - bsp_ser1_dma_recv_get_ndtr();
-
-                HAL_Delay( 10 );
-
-                rslt    =   modbus_rtu_rqst_recv( &dev );
-
-                //.reg.sensor_value                               = { 33000, 2 },
-
-                //APP_TRACE( "%02X %02X %02X %02X %02X %02X %02X %02X - %d\n", modbus_buf_recv[0], modbus_buf_recv[1], modbus_buf_recv[2], modbus_buf_recv[3], modbus_buf_recv[4], modbus_buf_recv[5], modbus_buf_recv[6], modbus_buf_recv[7], cnt);
-                //memset( modbus_buf_recv, 0, 10 );
+                dev.buf.len     =   MODBUS_RTU_FRAME_SIZE_MAX_OCT - bsp_ser1_dma_recv_get_ndtr();
+                rslt            =   modbus_rtu_rqst_recv( &dev );
 
                 switch( rslt )
                 {
                         case MODBUS_RSLT_OK:
-                                APP_TRACE( "MODBUS_RSLT_OK\n" );
+                                //APP_TRACE( "MODBUS_RSLT_OK\n" );
                                 rslt    =   modbus_rtu_resp_xmit( &dev );
                                 break;
 
                         case MODBUS_RSLT_INVALID_CRC:
-                                APP_TRACE( "MODBUS_RSLT_INVALID_CRC\n" );
+                                //APP_TRACE( "MODBUS_RSLT_INVALID_CRC\n" );
                                 break;
 
                         case MODBUS_RSLT_INVALID_ADDR:
-                                APP_TRACE( "MODBUS_RSLT_INVALID_ADDR\n" );
+                                //APP_TRACE( "MODBUS_RSLT_INVALID_ADDR\n" );
                                 break;
 
                         default:
-                                APP_TRACE( "MODBUS_RSLT_XXX\n" );
+                                //APP_TRACE( "MODBUS_RSLT_XXX\n" );
                                 break;
                 }
 

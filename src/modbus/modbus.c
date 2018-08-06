@@ -38,35 +38,31 @@ uint16_t modbus_addr_translate(         uint16_t                addr )
 
 
 void
-modbus_rtu_init(                                modbus_dev_t *  dev,
-                                                //uint8_t *       data_xmit,
-                                                uint8_t *       data_recv,
-                                                size_t          cnt,
+modbus_init(                                    modbus_dev_t *  dev,
+                                                uint8_t *       buf_raw,
+                                                size_t          buf_len,
                                                 uint16_t *      tbl0,
                                                 uint16_t *      tbl1,
                                                 uint16_t *      tbl2,
                                                 uint16_t *      tbl3 )
 {
-        modbus_xfer_t *         recv            = &( dev->raw );
-        //modbus_xfer_t *         xmit            = &( dev->xmit );
-
-
-        //xmit->buf       =   data_xmit;
-        //xmit->cnt       =   cnt;
-        recv->buf       =   data_recv;
-        recv->cnt       =   cnt;
-        dev->tbl0       =   tbl0;
-        dev->tbl1       =   tbl1;
-        dev->tbl2       =   tbl2;
-        dev->tbl3       =   tbl3;
+        dev->tbl[ 0 ]   =   tbl0;
+        dev->tbl[ 1 ]   =   tbl1;
+        dev->tbl[ 2 ]   =   tbl2;
+        dev->tbl[ 3 ]   =   tbl3;
+        //dev->tbl[ 0 ]   =   tbl0;
+        dev->buf.raw    =   buf_raw;
+        dev->buf.len    =   buf_len;
 }
 
 
-void
+modbus_rslt_t
 modbus_reg_update(                              modbus_reg_t *  reg,
                                                 uint16_t        data )
 {
-        reg->data         =   data;
+        reg->data       =   data;
+
+        return( MODBUS_RSLT_OK );
 }
 
 

@@ -54,12 +54,14 @@ typedef enum    modbus_rslt_e
 typedef enum    modbus_cfg_e
 {
         MODBUS_CFG_DEV_ADDR,
+        MODBUS_CFG_SER_BAUDRATE,
+        MODBUS_CFG_SER_STOPBITS,
+        MODBUS_CFG_SER_PARITY,
 } modbus_cfg_t;
 
 
 typedef struct  modbus_reg_s
 {
-        //uint16_t                addr;
         uint16_t                data;
 } modbus_reg_t;
 
@@ -120,39 +122,43 @@ typedef struct  modbus_tbl_s
 } modbus_tbl_t;
 */
 
-typedef uint16_t                modbus_tbl_t;
-
 typedef struct  modbus_xfer_s
 {
-        uint8_t *               buf;
-        size_t                  cnt;
+        uint8_t *               raw;
+        size_t                  len;
 } modbus_xfer_t;
 
+typedef struct  modbus_tbl_s
+{
+        uint16_t                data;
+        size_t                  size;
+} modbus_tbl_t;
 
 typedef struct  modbus_dev_s
 {
         uint8_t                 addr;
-        uint16_t *              tbl0;
-        uint16_t *              tbl1;
-        uint16_t *              tbl2;
-        uint16_t *              tbl3;
+        //uint16_t *              tbl0;
+        //uint16_t *              tbl1;
+        //uint16_t *              tbl2;
+        //uint16_t *              tbl3;
+        uint16_t *              tbl[4];
+        //modbus_tbl_t            tbl[ 4 ];
         modbus_reg_map_t        reg;
-        //modbus_xfer_t           xmit;
-        modbus_xfer_t           raw;
+        modbus_xfer_t           buf;
 } modbus_dev_t;
 
 
 void
-modbus_rtu_init(                                modbus_dev_t *  dev,
-                                                //uint8_t *       data_xmit,
-                                                uint8_t *       data_recv,
-                                                size_t          cnt,
+modbus_init(                                    modbus_dev_t *  dev,
+                                                uint8_t *       buf_raw,
+                                                size_t          buf_len,
                                                 uint16_t *      tbl0,
                                                 uint16_t *      tbl1,
                                                 uint16_t *      tbl2,
                                                 uint16_t *      tbl3 );
 
-uint16_t modbus_crc(                    const   uint8_t *       data,
+uint16_t
+modbus_crc(                             const   uint8_t *       data,
                                                 size_t          size    );
 
 modbus_rslt_t
@@ -166,7 +172,7 @@ modbus_rtu_rqst_recv(                           modbus_dev_t *  dev );
 modbus_rslt_t
 modbus_rtu_resp_xmit(                           modbus_dev_t *  dev );
 
-void
+modbus_rslt_t
 modbus_reg_update(                              modbus_reg_t *  reg,
                                                 uint16_t        data );
 
